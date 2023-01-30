@@ -1,6 +1,7 @@
 import distutils
 import sys
-from cx_Freeze import setup, Executable
+
+from cx_Freeze import Executable, setup
 
 from app import APP_NAME
 
@@ -12,10 +13,10 @@ author = "John Doe"
 icon = "./icons/icon.ico"
 # Generate a unique upgrade code by running the below command in Python
 # str(uuid.uuid3(uuid.NAMESPACE_DNS, "myapp.example.com")).upper()
+# https://learn.microsoft.com/en-us/windows/win32/msi/using-an-upgradecode
 upgrade_code = ""
 # Start Menu Folder
 start_folder = ""
-
 
 
 base = "Win32GUI" if sys.platform == "win32" else None
@@ -76,8 +77,6 @@ setup(
         "bdist_msi": bdist_msi_options,
     },
     executables=[executable],
-    use_scm_version={
-        "write_to": "app/_version.py"
-    },
-    setup_requires=['setuptools_scm'],
+    use_scm_version={"write_to": "app/_version.py"},
+    setup_requires=["setuptools_scm"],
 )

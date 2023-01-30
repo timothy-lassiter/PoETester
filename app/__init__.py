@@ -1,7 +1,9 @@
 try:
     from ._version import version as VERSION
 except ImportError:
-    VERSION = "DEV"
+    from setuptools_scm import get_version
+
+    VERSION = get_version()
 
 
 ORGANIZATION_NAME = "My Organization"
@@ -10,9 +12,11 @@ APP_NAME = "My App"
 
 
 def run():
-    import sys
     import locale
+    import sys
+
     from PySide6.QtWidgets import QApplication
+
     from app.widgets.mainwindow import MainWindow
 
     locale.setlocale(locale.LC_ALL, "")

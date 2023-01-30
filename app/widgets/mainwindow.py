@@ -1,6 +1,6 @@
 from PySide6.QtCore import QSettings
 from PySide6.QtGui import QCloseEvent
-from PySide6.QtWidgets import QMainWindow, QApplication
+from PySide6.QtWidgets import QApplication, QMainWindow
 
 from app.ui.ui_mainwindow import Ui_MainWindow
 
