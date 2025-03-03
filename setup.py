@@ -1,5 +1,5 @@
-import distutils
 import sys
+import sysconfig
 
 from cx_Freeze import Executable, setup
 
@@ -22,7 +22,7 @@ start_folder = ""
 base = "Win32GUI" if sys.platform == "win32" else None
 install_dir = (
     "ProgramFiles64Folder"
-    if distutils.util.get_platform() == "win-amd64"
+    if sysconfig.get_platform() == "win-amd64"
     else "ProgramFilesFolder"
 )
 
