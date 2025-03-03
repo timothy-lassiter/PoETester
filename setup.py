@@ -10,13 +10,9 @@ description = APP_DESCRIPTION
 author = APP_AUTHOR
 icon = "./icons/icon.ico"
 
-
-# TODO: Generate a unique upgrade code by running the below command.
-# python -c "import uuid; print(str(uuid.uuid3(uuid.NAMESPACE_DNS, 'myapp.example.com')).upper());"
-# https://learn.microsoft.com/en-us/windows/win32/msi/using-an-upgradecode
-upgrade_code = ""
+upgrade_code = "3799EFA4-C852-3F61-8004-16BDAB266CF5"
 # Start Menu Folder
-start_folder = ""
+start_folder = "Rugged Science"
 
 
 base = "Win32GUI" if sys.platform == "win32" else None
@@ -28,7 +24,8 @@ install_dir = (
 
 
 build_exe_options = {
-    "zip_include_packages": ["encoder", "PySide6"],
+    "include_files": ['devices/'],
+    "zip_include_packages": ["encoder"],
     "include_msvcr": True,
     "excludes": [
         "tkinter",
@@ -39,7 +36,6 @@ build_exe_options = {
         "unittest",
         "html",
         "http",
-        "xml",
     ],
 }
 

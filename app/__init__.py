@@ -7,17 +7,18 @@ except ImportError:
 
 
 # TODO: Update application information
-APP_NAME = "My App"
-APP_DESCRIPTION = "My PySide App!"
-APP_AUTHOR = "John Doe"
-DOMAIN_NAME = "example.com"
-ORGANIZATION_NAME = "My Organization"
+APP_NAME = "PoE Tester"
+APP_DESCRIPTION = "Application for testing PoE on Rugged Science computers"
+APP_AUTHOR = "Timothy Lassiter"
+DOMAIN_NAME = "ruggedscience.com"
+ORGANIZATION_NAME = "Rugged Science"
 
 
 def run():
     import locale
     import sys
-
+    import os
+    
     from PySide6.QtWidgets import QApplication
 
     from app.widgets.mainwindow import MainWindow
@@ -30,6 +31,8 @@ def run():
     QApplication.setApplicationVersion(VERSION)
 
     app = QApplication(sys.argv)
-    widget = MainWindow()
+    app.setStyle("Fusion")
+    
+    widget = MainWindow(sys.argv)
     widget.show()
     sys.exit(app.exec())
