@@ -3,16 +3,16 @@ import sysconfig
 
 from cx_Freeze import Executable, setup
 
-from app import APP_NAME
+from app import APP_AUTHOR, APP_DESCRIPTION, APP_NAME
 
 app_name = APP_NAME
-
-
-description = "My PySide App!"
-author = "John Doe"
+description = APP_DESCRIPTION
+author = APP_AUTHOR
 icon = "./icons/icon.ico"
-# Generate a unique upgrade code by running the below command in Python
-# str(uuid.uuid3(uuid.NAMESPACE_DNS, "myapp.example.com")).upper()
+
+
+# TODO: Generate a unique upgrade code by running the below command.
+# python -c "import uuid; print(str(uuid.uuid3(uuid.NAMESPACE_DNS, 'myapp.example.com')).upper());"
 # https://learn.microsoft.com/en-us/windows/win32/msi/using-an-upgradecode
 upgrade_code = ""
 # Start Menu Folder

@@ -6,9 +6,12 @@ except ImportError:
     VERSION = get_version()
 
 
-ORGANIZATION_NAME = "My Organization"
-DOMAIN_NAME = "example.com"
+# TODO: Update application information
 APP_NAME = "My App"
+APP_DESCRIPTION = "My PySide App!"
+APP_AUTHOR = "John Doe"
+DOMAIN_NAME = "example.com"
+ORGANIZATION_NAME = "My Organization"
 
 
 def run():
