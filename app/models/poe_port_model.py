@@ -41,6 +41,7 @@ class PoePortModel(QObject):
     def voltage(self, value: float) -> None:
         if self._voltage != value:
             self._voltage = value
+            self._update_current()
             self.voltage_changed.emit(self.id, value)
         
         if self._voltage_max < value:
@@ -78,6 +79,7 @@ class PoePortModel(QObject):
     def power(self, value: float) -> None:
         if self._power != value:
             self._power = value
+            self._update_current()
             self.power_changed.emit(self.id, value)
         
         if self._power_max < value:
@@ -87,3 +89,9 @@ class PoePortModel(QObject):
     @property
     def max_power(self) -> float:
         return self._power_max
+    
+    def _update_current(self) -> None:
+        if self.voltage > 0:
+            self.current = self.power / self.voltage
+        else:
+            self.current = 0
