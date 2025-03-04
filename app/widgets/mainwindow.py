@@ -3,20 +3,16 @@ import xml.etree.ElementTree as ET
 
 from PySide6.QtCore import QSettings, Qt, QTimer, QCoreApplication
 from PySide6.QtGui import QCloseEvent
-from PySide6.QtWidgets import QApplication, QMainWindow
+from PySide6.QtWidgets import QApplication, QMainWindow, QTableWidgetItem
 from rssdk import RsPoe
 
 from app.bitinterface import BitInterface, ErrorSeverity, PluginStatus
 from app.ui.ui_mainwindow import Ui_MainWindow
-from app.widgets.poe_widget import PoeWidget
+from app.models.poe_port_model import PoePortModel
+from app.models.poe_table_model import PoeTableModel
 
 
 class MainWindow(QMainWindow):
-    MIN_PASSING_VOLTAGE = 50
-    MIN_PASSING_CURRENT = 1
-    MIN_PASSING_POWER = 20
-
-    _ports: dict[int, PoeWidget] = {}
     _poe = RsPoe()
     _bit_interface: BitInterface | None  = None
 
@@ -25,10 +21,17 @@ class MainWindow(QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
+
+        self._poe_table_model = PoeTableModel()
+        self.ui.poe_table_view.setModel(self._poe_table_model)
+    
         if args and args[0].startswith("BIT_PLUGIN_INT"):
             self._bit_interface = BitInterface(args[0], "PoE Tester")
+            # We only use the read and verify operations
+            self._bit_interface.read_operations = 0
+            self._bit_interface.verify_operations = 0
             self._bit_interface.set_status(PluginStatus.PLUGIN_STARTUP, "Starting")
-            self._bit_interface.set_error(ErrorSeverity.ERRORNONE, f"Using the following thresholds: {self.MIN_PASSING_VOLTAGE}V, {self.MIN_PASSING_CURRENT}A, {self.MIN_PASSING_POWER}W")
+            self._bit_interface.set_error(ErrorSeverity.ERRORNONE, f"Using the following thresholds: {self._poe_table_model.passing_voltage:.2f}V, {self._poe_table_model.passing_power:.2f}W")
 
         self._timer = QTimer(interval=1000, parent=self)
         self._timer.timeout.connect(self._update_ports)
@@ -73,59 +76,78 @@ class MainWindow(QMainWindow):
         self.ui.continue_button.setEnabled(index != 0)
 
     def _continue_clicked(self) -> None:
-        self._ports.clear()
-        while self.ui.poe_ports_layout.count():
-            child = self.ui.poe_ports_layout.takeAt(0)
-            if child.widget():
-                child.widget().deleteLater()
+        self.ui.continue_button.setEnabled(False)
+        self._poe_table_model.passing_power = self.ui.passing_power_input.value()
+        self._poe_table_model.passing_voltage = self.ui.passing_voltage_input.value()
 
         device_file = self.ui.device_combobox.currentData(role=Qt.ItemDataRole.UserRole)
         self._poe.setXmlFile(device_file)
-        index = 0
-        for port in self._poe.getPortList():
-            row = int(index & 0b1)
-            col = int(index / 2)
-            widget = PoeWidget(port, self)
-            self._ports[port] = widget
-            self.ui.poe_ports_layout.addWidget(widget, row, col, Qt.AlignmentFlag.AlignCenter)
-            index += 1
-
         
-        self._poe.setXmlFile(device_file)
+        for port in self._poe.getPortList():
+            port_model = PoePortModel(port)
+            self._poe_table_model.addPort(port_model)
+
         self._timer.start()
-        self.ui.stackedWidget.setCurrentIndex(1)
+        self.ui.stackedWidget.setCurrentWidget(self.ui.poe_table_page)
         self._update_ports()
 
+
     def _update_ports(self) -> None:
-        for port, widget in self._ports.items():
-            widget.voltage = self._poe.getPortVoltage(port)
-            widget.current = self._poe.getPortCurrent(port)
-            widget.power = self._poe.getPortPower(port)
+        all_passing = True
+        for port in self._poe_table_model.ports:
+            port.voltage = self._poe.getPortVoltage(port.id)
+            port.current = self._poe.getPortCurrent(port.id)
+            port.power = self._poe.getPortPower(port.id)
+            if not self._poe_table_model.is_port_passing(port.id):
+                all_passing = False
+
+        if self._bit_interface:
+            self._bit_interface.cycle += 1
+            self._bit_interface.read_operations += 1
+            self._bit_interface.verify_operations += 1
+        
+            if all_passing:
+                self.close()
+        
 
     def _load_settings(self) -> None:
         settings = QSettings()
         self.restoreGeometry(settings.value("geometry"))
         self.restoreState(settings.value("state"))
 
+        passing_voltage = settings.value("passing_voltage")
+        passing_power = settings.value("passing_power")
+
+        if isinstance(passing_voltage, (float, str)):
+            self._poe_table_model.passing_voltage = float(passing_voltage)
+        if isinstance(passing_power, (float, str)):
+            self._poe_table_model.passing_power = float(passing_power)
+
+        self.ui.passing_voltage_input.setValue(self._poe_table_model.passing_voltage)
+        self.ui.passing_power_input.setValue(self._poe_table_model.passing_power)
+
     def _save_settings(self) -> None:
         settings = QSettings()
         settings.setValue("geometry", self.saveGeometry())
         settings.setValue("state", self.saveState())
+        settings.setValue("passing_voltage", self._poe_table_model.passing_voltage)
+        settings.setValue("passing_power", self._poe_table_model.passing_power)
 
     def closeEvent(self, event: QCloseEvent) -> None:
         if self._bit_interface:
             failed_ports = []
-            for port, widget in self._ports.items():
-                v = widget.max_voltage
-                c = widget.max_current
-                p = widget.max_power
-                self._bit_interface.set_error(ErrorSeverity.ERRORNONE, f"LAN {port}: Voltage: {v:.2f}V, Current: {c:.2f}A, Power: {p:.2f}W")
+            for port_model in self._poe_table_model.ports:
+                v = port_model.max_voltage
+                c = port_model.max_current
+                p = port_model.max_power
+                self._bit_interface.set_error(ErrorSeverity.ERRORNONE, f"LAN {port_model.id}: Voltage: {v:.2f}V, Current: {c:.2f}A, Power: {p:.2f}W", wait=True)
 
-                if v < self.MIN_PASSING_VOLTAGE or c < self.MIN_PASSING_CURRENT or p < self.MIN_PASSING_POWER:
-                    failed_ports.append(port)
+                if not self._poe_table_model.is_port_passing(port_model.id):
+                    failed_ports.append(port_model.id)
 
-            self._bit_interface.set_error(ErrorSeverity.ERRORCRITICAL, f"LAN(s) {", ".join(map(str, failed_ports))} below threshold", wait=True)
-            self._bit_interface.cycle += 1
+            if failed_ports:
+                self._bit_interface.set_error(ErrorSeverity.ERRORCRITICAL, f"LAN(s) {", ".join(map(str, failed_ports))} below threshold", wait=True)
+
             self._bit_interface.set_pretest_complete(wait=True)
 
         self._save_settings()

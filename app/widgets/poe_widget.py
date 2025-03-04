@@ -1,75 +1,44 @@
-import xml.etree.ElementTree as ET
-
-from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QWidget, QFrame
 
+from app.models.poe_port_model import PoePortModel
 from app.ui.ui_poe_widget import Ui_PoeWidget
 
-from rssdk import PoeState
+
 
 
 class PoeWidget(QFrame):
-    _voltage = 0.0
-    _voltage_max = 0.0
-
-    _current = 0.0
-    _current_max = 0.0
-
-    _power = 0.0
-    _power_max = 0.0
-
-    def __init__(self, id: int, parent: QWidget | None = None) -> None:
+    def __init__(self, model: PoePortModel, parent: QWidget | None = None) -> None:
         super().__init__(parent=parent)
 
         self.ui = Ui_PoeWidget()
         self.ui.setupUi(self)
 
-        self.ui.lan_id_label.setText(f"LAN {id}")
+        self._model = model
+        self._model.voltage_changed.connect(self._voltage_changed)
+        self._model.max_voltage_changed.connect(self._max_voltage_changed)
 
-    @property
-    def voltage(self) -> float:
-        return self._voltage
-        
-    @voltage.setter
-    def voltage(self, value: float) -> None:
-        self._voltage = value
-        self._voltage_max = max(self._voltage_max, value)
+        self._model.current_changed.connect(self._current_changed)
+        self._model.max_current_changed.connect(self._max_current_changed)
 
-        self.ui.voltage_value.setText(f"{value:.2f}V")
-        self.ui.voltage_max.setText(f"{self._voltage_max:.2f}V")
+        self._model.power_changed.connect(self._power_changed)
+        self._model.max_power_changed.connect(self._max_power_changed)
 
-    @property
-    def max_voltage(self) -> float:
-        return self._voltage_max
+        self.ui.lan_id_label.setText(f"LAN {model.id}")
 
-    @property
-    def current(self) -> float:
-        return self._current
-        
-    @current.setter
-    def current(self, value: float) -> None:
-        self._current = value
-        self._current_max = max(self._current_max, value)
+    def _voltage_changed(self) -> None:
+        self.ui.voltage_label.setText(f"{self._model.voltage:.2f}V")
 
-        self.ui.current_value.setText(f"{value:.2f}A")
-        self.ui.current_max.setText(f"{self._current_max:.2f}A")
+    def _max_voltage_changed(self) -> None:
+        self.ui.voltage_max.setText(f"{self._model.max_voltage:.2f}V")
 
-    @property
-    def max_current(self) -> float:
-        return self._current_max
+    def _current_changed(self) -> None:
+        self.ui.current_label.setText(f"{self._model.current:.2f}A")
 
-    @property
-    def power(self) -> float:
-        return self._power
-        
-    @power.setter
-    def power(self, value: float) -> None:
-        self._power = value
-        self._power_max = max(self._power_max, value)
+    def _max_current_changed(self) -> None:
+        self.ui.current_max.setText(f"{self._model.max_current:.2f}A")
 
-        self.ui.power_value.setText(f"{value:.2f}W")
-        self.ui.power_max.setText(f"{self._power_max:.2f}W")
+    def _power_changed(self) -> None:
+        self.ui.power_label.setText(f"{self._model.power:.2f}W")
 
-    @property
-    def max_power(self) -> float:
-        return self._power_max
+    def _max_power_changed(self) -> None:
+        self.ui.power_max.setText(f"{self._model.max_power:.2f}W")
