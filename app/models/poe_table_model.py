@@ -76,7 +76,7 @@ class PoeTableModel(QAbstractTableModel):
     
     def is_port_passing(self, port_id: int) -> bool:
         port_model = self.getPort(port_id)
-        return port_model.max_voltage >= self.passing_voltage and port_model.max_current >= self.passing_power
+        return port_model.max_voltage >= self.passing_voltage and port_model.max_power >= self.passing_power
 
     def _on_port_changed(self, port_id: int):
         try:
